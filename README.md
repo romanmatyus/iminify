@@ -39,5 +39,7 @@ ImageMagick
 COPYRIGHT
 ---------
 Copyright (C) 2013 Roman Mátyus <romanmatyus@gmail.com>
+
 All rights reserved.
+
 License BSD.
