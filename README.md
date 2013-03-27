@@ -32,6 +32,14 @@ Resize all JPG and PNG images in directory `~/Images` and copied to directory `~
 
 	iminify -i ~/Images -o ~/Mini -q 80 -s "800x600" -t "jpg,JPG,png,PNG" -d -f
 
+INSTALL
+-------
+
+	git clone https://github.com/romanmatyus/iminify.git
+	cd iminify
+	sudo chmod +x iminify
+	sudo cp iminify /usr/bin/iminify
+
 SEE ALSO
 --------
 ImageMagick
