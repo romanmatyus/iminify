@@ -1,0 +1,144 @@
+#!/bin/bash
+# TODO: http://optipng.sourceforge.net/
+# TODO: http://pmt.sourceforge.net/pngcrush/
+# TODO: http://advancemame.sourceforge.net/comp-readme.html
+# TODO: http://www.kokkonen.net/tjko/projects.html
+
+LC_NUMERIC=C LC_COLLATE=C
+
+IMAGETYPES="jpg,JPG"
+QUALITY=95
+SIZE="1024x768"
+DEBUG=false
+FORCE=false
+HELP=" NAME\n
+\timinify - bash script for batch image reduction while maintaining the directory structure\n
+\n
+SYNOPSIS\n
+\timinify -i [INPUT DIRECORY] -o [OUTPUT DIRECOTRY] [OTHER OPTION]\n
+\n
+OVERVIEW\n
+\tProgram minify images and copy direcotry structure. For its functionali using ImageMagick (convert).\n
+\n
+DESCRIPTION\n
+\tSettings:\n
+\t-i\tPath for directory with source images.\n
+\t-o\tPath for directory for processed images.\n
+\t-q\tQuality of images in percent. Represented by integer from 0-100. Default value is 95.\n
+\t-t\tList of processed image formats. Represented by extendsion with delimiter \",\" without spaces. Necessary are extensions in all occurrences. Default value is \"jpg,JPG\".\n
+\t-d\tOption for show same debug information. Check is only present option without value. Default value is false.\n
+\t-s\tSize of output images. Represented by string \"HEIGHTxWIDTH\". Default value is \"1024x768\".\n
+\t-f\tForce option for output destination. Check is only present option without value. Default value is false. Useable in three cases:\n
+\t\t- Entered output destination is not exist. If is option entered, create directory.\n
+\t\t- Entered output destination is not directory. If is option entered, remove old destination and create directory.\n
+\t\t- Entered output destination is not empty directory. If is option entered, remove files in directory.\n
+\t-h\tShow help.\n
+\n
+EXAMPLE\n
+\tResize all JPG and PNG images in directory ~/Images and copied to direcotry ~/Mini with output quality \"80\", image size \"800x600\", debug information and force creating output directory.\n\n
+\t$ iminify -i ~/Images -o ~/Mini -q 80 -s \"800x600\" -t \"jpg,JPG,png,PNG\" -d -f\n\n
+\n
+SEE ALSO\n
+\tImageMagick\n
+\n
+COPYRIGHT\n
+\tCopyright  (C)  2013  Roman Mátyus <romanmatyus@gmail.com>\n
+\tAll rights reserved.\n
+\tLicense BSD.\n\n
+2013/03/19"
+while getopts i:o:q:t:dhs:f opt; do
+	case $opt in
+	i)
+		INPUT=$OPTARG
+		;;
+	o)
+		IOUTPUT="$OPTARG"
+		if [ "$(echo $OPTARG | head -c 1)" = "/" ]
+			then
+				OUTPUT="$OPTARG"
+			else
+				OUTPUT="../$OPTARG"
+		fi
+		;;
+	q)
+		QUALITY=$OPTARG
+		;;
+	t)
+		IMAGETYPES=$OPTARG
+		;;
+	d)
+		DEBUG=true
+		;;
+	s)
+		SIZE=$OPTARG
+		;;
+	h)
+		echo -e $HELP
+		exit 1
+		;;
+	f)
+		FORCE=true
+		;;
+	esac	
+done
+
+command -v convert >/dev/null 2>&1 || { echo >&2 "Fatal error: I require ImageMagick but it's not installed. Please install etc. using 'sudo apt-get install imagemagick'. Aborting."; exit 1; }
+command -v trimage >/dev/null 2>&1 || { echo >&2 "Note: For better compress install Trimage etc. using 'sudo aptg-get install trimage'. "; exit 1; }
+
+if [ -z "$1" ] ; then echo -e $HELP;exit 1; fi
+if [ -z "$INPUT" ] ; then echo "Fatal error: Please, set directory with input files by parameter -i [directory]."; exit 1; fi
+if [ ! -d "$INPUT" ] ; then echo "Fatal error: Please, check directory with input files. Is entered $INPUT, but is not directory."; exit 1; fi
+if [ -z "$OUTPUT" ] ; then echo "Fatal error: Please, set directory for processed files by parameter -o [directory]."; exit 1; fi
+
+if $DEBUG; then 
+	echo "input: $INPUT"
+	echo "output: $OUTPUT"
+	echo "quality: $QUALITY"
+	echo "image types: $IMAGETYPES"
+	echo "---"
+fi
+
+IFS=',' read -a IMAGETYPES <<< "$IMAGETYPES"
+
+for index in "${!IMAGETYPES[@]}"
+do
+    IMAGETYPES[$index]="${IMAGETYPES[index]}\\"
+done
+
+SAVE_IFS=$IFS
+IFS="|"
+IMAGETYPEREGEX="${IMAGETYPES[*]}"
+IFS=$SAVE_IFS
+
+IMAGETYPEREGEX=".*\.\($IMAGETYPEREGEX)"
+
+if $FORCE; then 
+	rm -rf $IOUTPUT
+	mkdir $IOUTPUT
+elif [ ! -e $IOUTPUT ]; then
+	echo "Fatal error:  Please, check directory for processed files. Output destination not exist. For automatic create new output directory use option -f."
+	exit 1
+elif [ ! -d $IOUTPUT ]; then
+	echo "Fatal error:  Please, check directory for processed files. Output destination is not directory. For automatic remove old output destination and create new output directory use option -f."
+	exit 1
+elif [ "$(ls -A $IOUTPUT)" ]; then
+	echo "Fatal error:  Please, check directory for processed files. Output distination is not empty. For automatic remove all old files in output directory use option -f."
+	exit 1
+else
+	echo "Fatal errro: Unknown error!"
+	exit 1;
+fi
+cd $INPUT
+
+COUNT=$(find -regex $IMAGETYPEREGEX|wc -l)
+I=0
+find -regex $IMAGETYPEREGEX | while read file
+do
+	let "I++"
+	p=$(printf "%.2f" $(echo "$I / $COUNT * 100"|bc -l))
+
+	echo "$I/$COUNT ($p%) Processing: $file";
+  	cp --parents "$file" "$OUTPUT"
+  	convert "$OUTPUT/$file" -resize $SIZE -quality $QUALITY% "$OUTPUT/$file"
+done
+exit 0
