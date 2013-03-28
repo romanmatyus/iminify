@@ -83,7 +83,6 @@ while getopts i:o:q:t:dhs:f opt; do
 done
 
 command -v convert >/dev/null 2>&1 || { echo >&2 "Fatal error: I require ImageMagick but it's not installed. Please install etc. using 'sudo apt-get install imagemagick'. Aborting."; exit 1; }
-command -v trimage >/dev/null 2>&1 || { echo >&2 "Note: For better compress install Trimage etc. using 'sudo aptg-get install trimage'. "; exit 1; }
 
 if [ -z "$1" ] ; then echo -e $HELP;exit 1; fi
 if [ -z "$INPUT" ] ; then echo "Fatal error: Please, set directory with input files by parameter -i [directory]."; exit 1; fi
